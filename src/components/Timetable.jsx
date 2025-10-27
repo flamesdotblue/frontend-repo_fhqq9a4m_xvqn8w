@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import SubjectBadge from './SubjectBadge';
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const PERIODS = [
   { label: '9:00 - 10:00' },
   { label: '10:00 - 11:00' },
@@ -36,23 +36,38 @@ function rotateArray(arr, offset) {
   return [...arr.slice(k), ...arr.slice(0, k)];
 }
 
+function buildPoolForSixDays() {
+  // For 6 days x 7 periods with 1 fixed break -> 6 teaching slots/day -> 36 total teaching slots
+  const totalSlots = 36;
+  const baseEach = Math.floor(totalSlots / SUBJECTS.length); // 3
+  const remainder = totalSlots - baseEach * SUBJECTS.length; // 6
+
+  const pool = [];
+  // Add baseEach occurrences for all subjects
+  SUBJECTS.forEach((s) => {
+    for (let i = 0; i < baseEach; i++) pool.push(s);
+  });
+  // Distribute remainder by giving one extra slot to the first `remainder` subjects
+  for (let i = 0; i < remainder; i++) {
+    pool.push(SUBJECTS[i]);
+  }
+  return pool; // length 36
+}
+
 function buildSectionSchedule(sectionIndex) {
-  // For 5 days, 7 periods/day with a fixed break at index 3
-  // Non-break slots per day = 6; total = 30. We will distribute 10 subjects * 3 each.
-  const perSectionCount = 3; // each subject exactly 3 times per section
-  const pool = SUBJECTS.flatMap((s) => Array.from({ length: perSectionCount }, () => s)); // 30 items
+  const pool = buildPoolForSixDays();
 
   // Rotate base to diversify between sections
-  const base = rotateArray(pool, sectionIndex * 3);
+  const base = rotateArray(pool, sectionIndex * 4);
 
   // Simple reshuffle with seeded randomness to avoid identical patterns
   const shuffled = [...base];
   for (let i = 0; i < shuffled.length; i++) {
-    const j = Math.floor(seededRandom(i + 13 * (sectionIndex + 1)) * shuffled.length);
+    const j = Math.floor(seededRandom(i + 17 * (sectionIndex + 1)) * shuffled.length);
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
 
-  // Build a 5x7 matrix inserting BREAK at period index 3 and avoiding consecutive duplicates within a day
+  // Build a 6x7 matrix inserting BREAK at period index 3 and avoiding consecutive duplicates within a day
   const schedule = Array.from({ length: DAYS.length }, () => Array(PERIODS.length).fill(null));
 
   let idx = 0;
@@ -62,11 +77,10 @@ function buildSectionSchedule(sectionIndex) {
         schedule[d][p] = 'BREAK';
         continue;
       }
-      // pick next subject ensuring not same as previous period (within same day) and not same as next non-break after lunch overlap
       let candidate = shuffled[idx % shuffled.length];
       let guard = 0;
       const prev = p > 0 && !PERIODS[p - 1].break ? schedule[d][p - 1] : null;
-      while ((candidate === prev) && guard < 50) {
+      while (candidate === prev && guard < 50) {
         idx++;
         candidate = shuffled[idx % shuffled.length];
         guard++;
@@ -76,12 +90,11 @@ function buildSectionSchedule(sectionIndex) {
     }
   }
 
-  // Additional pass to ensure the first period of a day isn't same as last of previous day
+  // Ensure the first period of a day isn't same as last of previous day
   for (let d = 1; d < DAYS.length; d++) {
     const lastPrev = schedule[d - 1][PERIODS.length - 1];
     const firstToday = schedule[d][0];
     if (lastPrev === firstToday) {
-      // swap with next slot if possible
       const tmp = schedule[d][1];
       schedule[d][1] = schedule[d][0];
       schedule[d][0] = tmp;
@@ -124,7 +137,7 @@ export default function Timetable() {
           ))}
         </div>
         <div className="text-xs text-slate-300/90">
-          Days: Monday–Friday • Periods: 9:00 AM – 4:00 PM • Lunch 12–1 (fixed)
+          Days: Monday–Saturday • Periods: 9:00 AM – 4:00 PM • Lunch 12–1 (fixed)
         </div>
       </div>
 

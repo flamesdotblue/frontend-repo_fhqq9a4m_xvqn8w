@@ -14,11 +14,11 @@ export default function App() {
             <div>
               <h2 className="text-xl md:text-2xl font-semibold">Weekly Timetables (Sections A–D)</h2>
               <p className="text-slate-300 text-sm mt-1">
-                Fully filled schedules for Monday to Friday, 7 periods per day with a common lunch break.
+                Fully filled schedules for Monday to Saturday, 7 periods per day with a common lunch break.
               </p>
             </div>
             <div className="text-xs text-slate-400">
-              Total teaching blocks per section: 35 (5 days × 7 periods)
+              Total teaching blocks per section: 42 (6 days × 7 periods)
             </div>
           </div>
 
